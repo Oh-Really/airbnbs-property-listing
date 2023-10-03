@@ -7,19 +7,19 @@ import ast
 import numpy as np
 
 
-def load_data():
+def load_data(filename : str, index_col=False) -> pd.DataFrame:
     root_dir = os.getcwd()
-    csv_path = Path(root_dir, 'airbnb-property-listings', 'tabular_data', 'listing.csv')
+    csv_path = Path(root_dir, 'airbnb-property-listings', 'tabular_data', filename)
     if csv_path.is_file():
-        listings_df = pd.read_csv(csv_path)
+        df = pd.read_csv(csv_path, index_col=index_col)
     else:
         print(f'File {csv_path} does not exist')
-    return listings_df
+    return df
 
 def remove_rows_with_missing_ratings(df: pd.DataFrame) -> pd.DataFrame:
     return df.dropna(subset=['Cleanliness_rating', 'Accuracy_rating', 'Communication_rating', 'Location_rating', 'Check-in_rating', 'Value_rating'])
 
-def remove_whitespace(list):
+def remove_whitespace(list: list) -> list:
     for string in list:
         #Checks to see if string is empty
         if not string.strip():
@@ -51,7 +51,7 @@ def convert_description_strings(desc):
     desc = ' '.join(desc)
     return desc
 
-def set_default_feature_values(df):
+def set_default_feature_values(df: pd.DataFrame) -> pd.DataFrame:
     return df.fillna(value={'guests': 1, 'beds': 1, 'bathrooms': 1, 'bedrooms': 1})
 
 
@@ -62,7 +62,7 @@ def clean_tabular_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def load_airbnb(df, label : str):
+def load_airbnb(df, label : str) -> tuple[pd.DataFrame, pd.Series]:
     features = df.select_dtypes(include=[np.number])
     labels = features.pop(label)
     return features, labels
@@ -70,7 +70,7 @@ def load_airbnb(df, label : str):
 
 
 if __name__ == "__main__":
-    df = load_data()
+    df = load_data('listing.csv')
     df = clean_tabular_data(df)
     output_filepath = Path(os.getcwd(), 'airbnb-property-listings', 'tabular_data', 'clean_tabular_data.csv')
     df.to_csv(output_filepath)

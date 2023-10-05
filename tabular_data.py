@@ -1,11 +1,13 @@
 
 # %%
 import os
+import sys
 from pathlib import Path
 import pandas as pd
 import ast
 import numpy as np
 
+print(sys.path)
 
 def load_data(filename : str, index_col=False) -> pd.DataFrame:
     root_dir = os.getcwd()

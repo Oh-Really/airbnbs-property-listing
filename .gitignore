@@ -1,1 +1,3 @@
-airbnb-property-listings\\images\
+airbnb-property-listings/images/
+__pycache__/
+airbnb.csv

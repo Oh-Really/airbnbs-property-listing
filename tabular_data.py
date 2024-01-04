@@ -65,9 +65,14 @@ def clean_tabular_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_airbnb(df, label : str) -> tuple[pd.DataFrame, pd.Series]:
-    features = df.select_dtypes(include=[np.number])
-    labels = features.pop(label)
-    return features, labels
+    if label == 'Price_Night':
+        features = df.select_dtypes(include=[np.number])
+        labels = df.pop(label)
+        return features, labels
+    else:
+        features = df.select_dtypes(include=[np.number])
+        labels = df[label]
+        return features, labels
 
 
 

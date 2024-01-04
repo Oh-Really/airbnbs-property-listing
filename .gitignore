@@ -1,3 +1,5 @@
 airbnb-property-listings/images/
 __pycache__/
 airbnb.csv
+models/
+__init__.py

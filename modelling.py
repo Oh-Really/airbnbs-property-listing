@@ -1,4 +1,5 @@
 # %%
+from get_data import get_training_validation_data, save_model
 from tabular_data import load_data, load_airbnb
 from sklearn import model_selection
 from sklearn.linear_model import SGDRegressor
@@ -21,9 +22,10 @@ airbnb_df.drop(columns=airbnb_df.columns[0], axis=1, inplace=True)
 features, labels = load_airbnb(airbnb_df, "Price_Night")
 
 # Split the data into a training, validation, and test sets for both X and y
-X_train, X_test, y_train, y_test = model_selection.train_test_split(features, labels, test_size=0.3, random_state=20)
-X_validation, X_test, y_validation, y_test = model_selection.train_test_split(
-X_test, y_test, test_size=0.5, random_state=20)
+X_train, X_validation, X_test, y_train, y_validation, y_test = get_training_validation_data(features, labels)
+
+# X_train, X_test, y_train, y_test = model_selection.train_test_split(features, labels, test_size=0.3, random_state=20)
+# X_validation, X_test, y_validation, y_test = model_selection.train_test_split(X_test, y_test, test_size=0.5, random_state=20)
 
 
 # %%
@@ -83,34 +85,11 @@ def tune_regression_model_hyperparameters(model_class, hyperparams_grid):
 
 #clf = tune_regression_model_hyperparameters(SGDRegressor, grid)
 # %%
-def save_model(folder: str, model_class, hyperparams_grid):
-    '''Saves model from tune_regression_model_hyperparameters function to desired 
-    folder, along with json of best performing hyperparms and performance metrics'''
-
-    model, hyperparams, metrics = tune_regression_model_hyperparameters(model_class, hyperparams_grid)
-    
-    output_folder = Path(os.getcwd(), 'models/regression', folder)
-
-    hyperparams = json.dumps(hyperparams)
-    file_path = os.path.join(output_folder, "hyperparameters.json")
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, 'w+') as json_file:
-        json_file.write(hyperparams)
-        #json.dumps(hyperparams)
-    
-    
-    metrics = json.dumps(metrics)
-    file_path = os.path.join(output_folder, "metrics.json")
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, 'w+') as json_file:
-        json_file.write(metrics)
-
-    file_path = os.path.join(output_folder, "model.joblib")
-    joblib.dump(model, file_path)
-
-
 def evaluate_different_models():
-    '''Here, you setup the models you would like to try out along with their hyperparemeters grid and then call these models on save_model.'''
+    '''Here, you setup the models you would like to try out along with their
+    hyperparemeters grid and then call these models on save_model.
+    '''
+ 
     
     SGDRegressor_hyperparameters = {"loss": ['squared_error', 'huber'],
     "max_iter": [1000, 10000, 100000],
@@ -139,9 +118,9 @@ def evaluate_different_models():
     hyperparam_list = [SGDRegressor_hyperparameters, decisiontree_hyperparameters, randomforest_hyperparameters, gradientboost_hyperparameters]    
     folder_list = ['linear_regression', 'decision_tree', 'random_forest', 'gradient_boost']
 
-    for (folder, model, param_grid) in zip(folder_list, model_list, hyperparam_list):
+    for (sub_folder, model, param_grid) in zip(folder_list, model_list, hyperparam_list):
         try:
-            save_model(folder, model, param_grid)
+            save_model('regression', sub_folder, model, param_grid, tune_regression_model_hyperparameters)
         except:
             pass
 
@@ -149,7 +128,7 @@ def evaluate_different_models():
 
 def find_best_model():
     '''
-    First, obtain a list of all metrics.json files and their absolute paths.
+    First, obtain a list of the absolute paths for all metrics.json files.
     Then, open these up in a loop, compare the Validation_RMSE score to previous. If better than previous score, save model in best_model var
     to be returned, along with that models hyperparameters.
     '''
@@ -183,5 +162,5 @@ if __name__ == "__main__":
     # "penalty": ['l2', 'l1', 'elasticnet'],
     # "alpha": [1e-3,1e-4,1e-5]
     # }
-    #save_model('regression\linear_regression', SGDRegressor, grid)
+    #save_model('regression\linear_regression', SGDRegressor, grid. tune_regression_model_hyperparameters)
     evaluate_different_models()

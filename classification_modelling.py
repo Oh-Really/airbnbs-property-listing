@@ -2,6 +2,8 @@
 from get_data import get_training_validation_data, save_model
 from tabular_data import load_data, load_airbnb
 from sklearn import model_selection
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score
@@ -64,15 +66,45 @@ def tune_classification_model_hyperparameters(model_class, hyperparams_grid):
 
     return best_model, best_hyperparams, results_dict
 
-grid = {
+def evaluate_different_models():
+    '''
+    Setup a series of classification models and their hyperparamter grids. These models will then be passed to 
+    tune_classification_model_hyperparameters method to assess and record their performances.
+    '''
+    logistic_regression_hyperparameters = {
     'multi_class' : ['ovr', 'multinomial'],
     'penalty': ['l2', 'none'],
     'max_iter' : [100, 1000, 1000]
- }
+    }
+    decisiontree_hyperparameters = {
+        "criterion": ['gini', 'entropy', 'log_loss'],
+        "max_features" : ['auto', 'sqrt', 'log2'],
+        "splitter": ['best','random']
+    }
+    random_forest_hyperparameters = {
+        "criterion": ['gini', 'entropy', 'log_loss'],
+        "max_features" : ['auto', 'sqrt', None],
+        "min_samples_leaf": [1,2,3]
+    }
+    gradientboosting_hyperparameters = {
+        'loss': ['log_loss'], 
+        'criterion': ['friedman_mse','squared_error'],
+        'max_features': [1,'sqrt','log2']
+    }
 
-#print(tune_classification_model_hyperparameters(LogisticRegression, grid))
-save_model('classification', 'linear_regression', LogisticRegression, grid, tune_classification_model_hyperparameters)
+    model_list = [LogisticRegression, DecisionTreeClassifier, RandomForestClassifier, GradientBoostingClassifier]
+    hyperparam_list = [logistic_regression_hyperparameters, decisiontree_hyperparameters, random_forest_hyperparameters, gradientboosting_hyperparameters]    
+    folder_list = ['logistic_regression', 'decision_tree', 'random_forest', 'gradient_boost']
+
+    for (sub_folder, model, param_grid) in zip(folder_list, model_list, hyperparam_list):
+        try:
+            save_model('classification', sub_folder, model, param_grid, tune_classification_model_hyperparameters)
+        except:
+            pass
+
+    return
 
 
+if __name__ == "__main__":
+    evaluate_different_models()
 
-# %%

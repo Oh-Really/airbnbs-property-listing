@@ -20,3 +20,21 @@ The first set of models that we used in this project were regression models, whi
 For such models, we typically want to minimise, or optimise, a particular loss funcion/parameter. One way of doing this is via gradient descent. A particular variant of this is Stochastic Gradient Descent.
 
 ### Stochastic Gradient Descent
+For a linear model, we make a prediction, denoted by $\widetilde{y}$, of our feature. The equation for this is:
+$$
+\widetilde{y} = h(x) = x \cdot w_0+b
+$$
+In this equation $w$ represents the weight vector, which is a vector containing the weights for every input in the parameter vector $x$, and $b$ is a bias value. In linear models, this can be linked to hte intercept and slope. The loss function in our case is the mean squared error, and hence the loss function can be written as:
+$$
+L := \frac{1}{N}\sum_{i=0}^{N-1}(y_i-\widetilde{y}_i)^2
+$$
+This calculates the sum of the residuals for each observation and our estimated value. We want to take the derivative of this function with respect to the parameters, in our case our weights. We can do so via:
+$$
+w_{i+1} := w_i - \eta \nabla L.
+$$
+$\eta$ here denotes the learning rate which dictates how much we change our weights by. We are updating the parameters, $w$, in the opposite direction of the gradient of the loss function w.r.t. the parameters, hence the minus sign. The new weight vector is substituted back into our prediction $\widetilde{y}$ giving us a new model, which we then use when taking the derivative of the loss function with the updated parameters. We repeat this process until the weight vector converges to an optimal vector
+$$
+w_i \longrightarrow{} w^*.
+$$
+
+### RMSE and $R^2$

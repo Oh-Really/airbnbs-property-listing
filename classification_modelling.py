@@ -1,5 +1,5 @@
 # %%
-from get_data import get_training_validation_data, save_model
+from utility_functions import get_training_validation_data, save_model
 from tabular_data import load_data, load_airbnb
 from sklearn import model_selection
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier

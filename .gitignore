@@ -3,3 +3,4 @@ __pycache__/
 airbnb.csv
 models/
 __init__.py
+runs/

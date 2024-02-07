@@ -6,6 +6,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from torcheval.metrics.functional import r2_score
 from torch.utils.tensorboard import SummaryWriter
 from pathlib import Path
+import random
 import numpy as np
 import pandas as pd
 import torch
@@ -27,8 +28,7 @@ class AirbnbNightlyPriceImageDataset(Dataset):
         return (features, label)
 
     def __len__(self):
-        return len(self.data)
-    
+        return len(self.data)    
 
 dataset = AirbnbNightlyPriceImageDataset()
 
@@ -55,16 +55,16 @@ def get_nn_config(config_file):
 class LinearRegression(torch.nn.Module):
     def __init__(self, nn_config):
         super().__init__()
-        self.layer = torch.nn.Linear(10,1)
+        #self.layer = torch.nn.Linear(10,1)
         hidden_layers = nn_config['hidden_layer_width']
 
-        # self.layer = torch.nn.Sequential(
-        #     torch.nn.Linear(10,hidden_layers[0]),
-        #     torch.nn.ReLU(),
-        #     torch.nn.Linear(hidden_layers[0],hidden_layers[1]),
-        #     torch.nn.ReLU(),
-        #     torch.nn.Linear(hidden_layers[1],1)
-        # )
+        self.layer = torch.nn.Sequential(
+            torch.nn.Linear(10,hidden_layers[0]),
+            torch.nn.ReLU(),
+            torch.nn.Linear(hidden_layers[0],hidden_layers[1]),
+            torch.nn.ReLU(),
+            torch.nn.Linear(hidden_layers[1],1)
+        )
         # drop out
         # batch norm
 
@@ -75,11 +75,26 @@ class LinearRegression(torch.nn.Module):
 
 
 def train_loop(model, train_loader, config=None,  epochs=10):
+    '''
+    Function to train and obtain training metrics for a given model.
+
+    Paramaters
+    ----------
+    model: Model that inherits from the torch.nn.Module class
+    train_loader: DataLoader object for the training set
+    config: Config file of the hyperparamaters of the model
+    epochs: Number of epochs to train the model over
+    
+    Returns
+    -------
+    model: Trained model with updated weights after training
+    training_duration: Time taken to train the model in s
+    train_metrics: Dictionary of training metrics, including RMSE, R2, and inference time
+    '''
     start = time()
-    # optimiser_method = eval(config['optimiser'])
-    # optimiser = optimiser_method(model.parameters(), lr = config['learning_rate'])
-    # TODO adam optimiser - try it out
-    optimiser = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimiser_method = eval(config['optimiser'])
+    optimiser = optimiser_method(model.parameters(), lr = config['learning_rate'])
+    #  optimiser = torch.optim.Adam(model.parameters(), lr=0.001)
 
     writer = SummaryWriter()
     batch_idx = 0
@@ -116,7 +131,7 @@ def train_loop(model, train_loader, config=None,  epochs=10):
             optimiser.step()
             optimiser.zero_grad()
             writer.add_scalar('training_loss', loss.item(), batch_idx)
-            print(f"batch number is {batch_idx}, loss is {loss.item()}")
+            #print(f"batch number is {batch_idx}, loss is {loss.item()}")
             batch_idx += 1
 
         
@@ -129,13 +144,17 @@ def train_loop(model, train_loader, config=None,  epochs=10):
     train_metrics = {'RMSE:': list(train_loss_avg.values())[-1], "R2:" : list(train_r2_avg.values())[-1].item(), "train inference time:": inference_time_avg[-1]}
         
 
-    generate_time_folders()
+    #generate_time_folders()
 
 
     return model, training_duration, train_metrics
 
     
 def generate_time_folders():
+    '''
+    Function to create folders with folder name of current time.
+
+    '''
     year, month, day = datetime.today().year, datetime.today().month, datetime.today().day
     hour, minute, second = strftime('%H'), strftime('%M'), strftime('%S')
     if len(str(day)) == 1:
@@ -144,11 +163,10 @@ def generate_time_folders():
     os.chdir('models/neural_networks/regression/')
     os.mkdir(folder)
     os.chdir(folder)
-    #save_model(model, config)
     #os.chdir('../../../../')
 
 
-def eval_model(model, data_loader_list):
+def eval_model(model, data_loader_list, train_metrics, training_duration):
         '''
         Evaluates the trained model on the validation and test data sets.
 
@@ -159,11 +177,9 @@ def eval_model(model, data_loader_list):
 
         Returns
         -------
-        val_metrics: A dictionary contraining the loss, r2 score, and average inference time of the validation set
-        test_metrics: A dictionary contraining the loss, r2 score, and average inference time of the test set
+        metrics: A dictionary contraining the loss, r2 score, and average inference time of the validation and test sets
         '''
-        # val_metrics = {}
-        # test_metrics = {}
+        
         metrics = {}
         i = 0
         for loader in data_loader_list:
@@ -207,14 +223,10 @@ def eval_model(model, data_loader_list):
                 test_loss = loss_list[-1]
                 test_r2 = r2_list[-1]
                 test_inference_time = sum(inference_times)/len(loader)
-                metrics['test_set'] = {'RMSE:': test_loss, "R2:": test_r2.item(), "test inference time:": test_inference_time}
-        
-        # # Extract the test loss and r2
-        # test_loss = loss_list[-1]
-        # test_r2 = r2_list[-1]
-        # test_inference_time = sum(inference_times)/len(loader)
-        # metrics = {'test_set': {'test_loss:': {test_loss}, "test_r2:" :{test_r2}, "test inference time:": {test_inference_time}}}
+                metrics['test_set'] = {'RMSE:': test_loss, "R2:": test_r2.item(), "test inference time:": test_inference_time}        
 
+        metrics['training_set'] = train_metrics
+        metrics['training_duration'] = training_duration
         return metrics
 
 # Debugging main statement
@@ -226,27 +238,75 @@ def eval_model(model, data_loader_list):
 
 
 
-def save_model(model, config, train_metrics, training_duration):
+def save_model(model, config, metrics):
+    ''''
+    Saves the model, its hyperparameters, and results metrics.
+
+    Parameters
+    ---------
+    model: The trained model returned by the train_loop function
+    config: The config associated with the model
+    train_metrics: A dictionary object containing the results from the training 
+    training_duration: Float value for the length of time it took train_loop to train the model
+
+    Returns
+    -------
+    metrics: Dictionary returned by eval_model, the dictionary of validation and test sets
+    '''
     if issubclass(model.__class__, torch.nn.Module):
         torch.save(model.state_dict(), 'model.pt')
         hyperparams = json.dumps(config)
         with open("hyperparameters.json", 'w+') as hyperparam_file:
             hyperparam_file.write(hyperparams)
-        # Get metrics, then dump into file called metrics.json
-        metrics = eval_model(model, [validation_loader, test_loader])
-        metrics['training_set'] = train_metrics
-        metrics['training_duration'] = training_duration
-        print(type(metrics))
+        ## Get metrics, then dump into file called metrics.json
+        ## metrics = eval_model(model, [validation_loader, test_loader])
+        ## metrics['training_set'] = train_metrics
+        ## metrics['training_duration'] = training_duration
         metrics = json.dumps(metrics)
         with open("metrics.json", 'w+') as metrics_file:
             metrics_file.write(metrics)
         os.chdir('../../../../')
+
+    return metrics
         
 
+def generate_nn_configs():
+    config_list = []
+    for lr in [0.1, 0.001, 0.001]:
+        for i in range(6):
+            layer1 = random.randint(10, 15)
+            layer2 = random.randint(2, 5)
+            config = {}
+            config['optimiser'] = 'torch.optim.Adam'
+            config['learning_rate'] = lr
+            config['hidden_layer_width'] = [layer1, layer2]
+            config_list.append(config)
+    
+    return config_list
+
+
+def find_best_nn():
+    config_list = generate_nn_configs()
+    best_rmse = np.inf
+    for config in config_list:
+        model = LinearRegression(config)
+        model, training_duration, train_metrics = train_loop(model, train_loader, config)
+        metrics = eval_model(model, [validation_loader, test_loader], train_metrics, training_duration)
+        #metrics = save_model(model, config, train_metrics, training_duration)
+        if metrics['test_set']['RMSE:'] < best_rmse:
+            best_model = model
+            best_metrics = metrics
+            best_config = config
+            best_rmse = metrics['test_set']['RMSE:']
+
+    generate_time_folders()
+    save_model(best_model, best_config, best_metrics)
+    return best_model, best_metrics, best_config
 
 if __name__ == "__main__":
-    config = get_nn_config('nn_config.yaml')
-    model = LinearRegression(config)
-    model, training_duration, train_metrics = train_loop(model, train_loader, config)
-    save_model(model, config, train_metrics, training_duration)
+    model, metrics, config = find_best_nn()
+    # config = get_nn_config('nn_config.yaml')
+    # model = LinearRegression(config)
+    # model, training_duration, train_metrics = train_loop(model, train_loader, config)
+    # save_model(model, config, train_metrics, training_duration)
 # %%

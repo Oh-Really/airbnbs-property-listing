@@ -4,7 +4,6 @@ from tabular_data import load_data, load_airbnb
 from sklearn import model_selection
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.preprocessing import LabelBinarizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score
 
@@ -13,15 +12,11 @@ airbnb_df = load_data('clean_tabular_data.csv')
 airbnb_df.drop(columns=airbnb_df.columns[0], axis=1, inplace=True)
 features, labels = load_airbnb(airbnb_df, "Category")
 
-# We see that the labels now have 5 unique, nominal categories. As such, for any Logistic Regression model we intend to implement,
-# we need to encode these labels and ensure the Logistic Regression model is a multinomial model.
-
-# lb = LabelBinarizer()
-# labels = lb.fit_transform(labels)
-
 X_train, X_validation, X_test, y_train, y_validation, y_test = get_training_validation_data(features, labels)
+
 # %%
 def my_Log_Regression():
+    ''' Implementation of a Logistic model'''
     clf_model = LogisticRegression(max_iter = 100000)
     clf_model.fit(X_train, y_train)
     prediction_value = clf_model.predict(X_test)
@@ -42,7 +37,22 @@ def my_Log_Regression():
     print(f'Accuracy: {accuracy} \n')
     return
 
+
 def tune_classification_model_hyperparameters(model_class, hyperparams_grid):
+    '''
+    Function to tune hyperparameters using GridSearch
+
+    Parameters
+    ---------
+    model_class: Model to be trained i.e. SGDRegressor
+    hyperparams_grid: Grid of hyperparameters which GridSearch will create permutations out of
+
+    Returns
+    -------
+    best_model: The best performing model
+    best_hyperparams: Hyperparamater set for the best performing model
+    results_dict: RMSE and R^2 score of the best model on the validation set
+    '''
     X_train, X_validation, X_test, y_train, y_validation, y_test = get_training_validation_data(features, labels)
     gridsearch = model_selection.GridSearchCV(estimator=model_class(random_state = 0), param_grid=hyperparams_grid)
 
@@ -66,15 +76,23 @@ def tune_classification_model_hyperparameters(model_class, hyperparams_grid):
 
     return best_model, best_hyperparams, results_dict
 
+
 def evaluate_different_models():
     '''
-    Setup a series of classification models and their hyperparamter grids. These models will then be passed to 
-    tune_classification_model_hyperparameters method to assess and record their performances.
+    Function to iterate over different model classes and hyperparameter grids to evaluate best performing model.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
     '''
     logistic_regression_hyperparameters = {
-    'multi_class' : ['ovr', 'multinomial'],
-    'penalty': ['l2', 'none'],
-    'max_iter' : [100, 1000, 1000]
+        'multi_class' : ['ovr', 'multinomial'],
+        'penalty': ['l2', 'none'],
+        'max_iter' : [100, 1000, 1000]
     }
     decisiontree_hyperparameters = {
         "criterion": ['gini', 'entropy', 'log_loss'],

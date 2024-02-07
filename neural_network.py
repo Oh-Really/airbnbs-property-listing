@@ -141,11 +141,8 @@ def train_loop(model, train_loader, config=None,  epochs=10):
 
 
     training_duration = np.round((time() - start), 2) # time in s
-    train_metrics = {'RMSE:': list(train_loss_avg.values())[-1], "R2:" : list(train_r2_avg.values())[-1].item(), "train inference time:": inference_time_avg[-1]}
+    train_metrics = {'RMSE': list(train_loss_avg.values())[-1], "R2" : list(train_r2_avg.values())[-1].item(), "train inference time": inference_time_avg[-1]}
         
-
-    #generate_time_folders()
-
 
     return model, training_duration, train_metrics
 
@@ -163,7 +160,6 @@ def generate_time_folders():
     os.chdir('models/neural_networks/regression/')
     os.mkdir(folder)
     os.chdir(folder)
-    #os.chdir('../../../../')
 
 
 def eval_model(model, data_loader_list, train_metrics, training_duration):
@@ -217,13 +213,13 @@ def eval_model(model, data_loader_list, train_metrics, training_duration):
                 val_loss = loss_list[-1]
                 val_r2 = r2_list[-1]
                 val_inference_time = sum(inference_times)/len(loader)
-                metrics['validation_set'] = {'RMSE:': val_loss, "R2:": val_r2.item(), "validation inference time:": val_inference_time}
+                metrics['validation_set'] = {'RMSE': val_loss, "R2": val_r2.item(), "validation inference time": val_inference_time}
                 i+=1
             else:
                 test_loss = loss_list[-1]
                 test_r2 = r2_list[-1]
                 test_inference_time = sum(inference_times)/len(loader)
-                metrics['test_set'] = {'RMSE:': test_loss, "R2:": test_r2.item(), "test inference time:": test_inference_time}        
+                metrics['test_set'] = {'RMSE': test_loss, "R2": test_r2.item(), "test inference time": test_inference_time}        
 
         metrics['training_set'] = train_metrics
         metrics['training_duration'] = training_duration
@@ -234,8 +230,6 @@ def eval_model(model, data_loader_list, train_metrics, training_duration):
 #     config = get_nn_config('nn_config.yaml')
 #     model = LinearRegression(config)
 #     eval_model(model, [validation_loader, test_loader])
-
-
 
 
 def save_model(model, config, metrics):
@@ -292,12 +286,11 @@ def find_best_nn():
         model = LinearRegression(config)
         model, training_duration, train_metrics = train_loop(model, train_loader, config)
         metrics = eval_model(model, [validation_loader, test_loader], train_metrics, training_duration)
-        #metrics = save_model(model, config, train_metrics, training_duration)
-        if metrics['test_set']['RMSE:'] < best_rmse:
+        if metrics['test_set']['RMSE'] < best_rmse:
             best_model = model
             best_metrics = metrics
             best_config = config
-            best_rmse = metrics['test_set']['RMSE:']
+            best_rmse = metrics['test_set']['RMSE']
 
     generate_time_folders()
     save_model(best_model, best_config, best_metrics)
@@ -309,4 +302,3 @@ if __name__ == "__main__":
     # model = LinearRegression(config)
     # model, training_duration, train_metrics = train_loop(model, train_loader, config)
     # save_model(model, config, train_metrics, training_duration)
-# %%

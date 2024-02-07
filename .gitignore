@@ -4,3 +4,4 @@ airbnb.csv
 models/
 __init__.py
 runs/
+nn_config.yaml

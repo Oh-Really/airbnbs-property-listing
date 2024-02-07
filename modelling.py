@@ -16,28 +16,25 @@ import os
 import json
 
 
-# Load the data into a dataframe and Series
 airbnb_df = load_data('clean_tabular_data.csv')
 airbnb_df.drop(columns=airbnb_df.columns[0], axis=1, inplace=True)
 features, labels = load_airbnb(airbnb_df, "Price_Night")
 
-# Split the data into a training, validation, and test sets for both X and y
 X_train, X_validation, X_test, y_train, y_validation, y_test = get_training_validation_data(features, labels)
-
-# X_train, X_test, y_train, y_test = model_selection.train_test_split(features, labels, test_size=0.3, random_state=20)
-# X_validation, X_test, y_validation, y_test = model_selection.train_test_split(X_test, y_test, test_size=0.5, random_state=20)
 
 
 # %%
 # Tuning hyperparameters is the main reason we need the validation set. Each permutation of 
 # hyperparams should be tested on the same validation set
 
-# Returns Generator object that gives all permutations of input hyperparamaters
 def grid_search(hyperparameters: dict):
+    '''Returns Generator object that gives all permutations of input hyperparamaters  '''
     keys, values = zip(*hyperparameters.items())
     yield from (dict(zip(keys, v)) for v in itertools.product(*values))
 
+
 def custom_tune_regression_model_hyperparameters(model_class, hyperparams_grid: dict, *sets):
+    ''' Custom grid search function'''
     best_hyperparams, best_loss = None, np.inf
 
     for hyperparams in grid_search(hyperparams_grid):
@@ -65,7 +62,20 @@ def custom_tune_regression_model_hyperparameters(model_class, hyperparams_grid: 
 #custom_tune_regression_model_hyperparameters(SGDRegressor, grid, X_validation, X_test, X_train, y_validation, y_test, y_train)
 # %%
 def tune_regression_model_hyperparameters(model_class, hyperparams_grid):
-    #Am I to extend this to a for loop if given multiple estimators?
+    ''' 
+    Function to tune hyperparameters using GridSearch
+
+    Parameters
+    ---------
+    model_class: Model to be trained i.e. SGDRegressor
+    hyperparams_grid: Grid of hyperparameters which GridSearch will create permutations out of
+
+    Returns
+    -------
+    best_model: The best performing model
+    best_hyperparams: Hyperparamater set for the best performing model
+    results_dict: RMSE and R^2 score of the best model on the validation set   
+    '''
     model = model_class(random_state=0)
     search = model_selection.GridSearchCV(estimator=model, param_grid=hyperparams_grid, scoring='neg_root_mean_squared_error')
     search.fit(X_train, y_train)
@@ -86,8 +96,16 @@ def tune_regression_model_hyperparameters(model_class, hyperparams_grid):
 #clf = tune_regression_model_hyperparameters(SGDRegressor, grid)
 # %%
 def evaluate_different_models():
-    '''Here, you setup the models you would like to try out along with their
-    hyperparemeters grid and then call these models on save_model.
+    '''
+    Function to iterate over different model classes and hyperparameter grids to evaluate best performing model.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
     '''
  
     

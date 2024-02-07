@@ -51,7 +51,7 @@ def tune_classification_model_hyperparameters(model_class, hyperparams_grid):
     -------
     best_model: The best performing model
     best_hyperparams: Hyperparamater set for the best performing model
-    results_dict: RMSE and R^2 score of the best model on the validation set
+    results_dict: Validation accuracy, recall, F1, and precision score
     '''
     X_train, X_validation, X_test, y_train, y_validation, y_test = get_training_validation_data(features, labels)
     gridsearch = model_selection.GridSearchCV(estimator=model_class(random_state = 0), param_grid=hyperparams_grid)
@@ -60,7 +60,7 @@ def tune_classification_model_hyperparameters(model_class, hyperparams_grid):
     best_model = gridsearch.best_estimator_
     y_val_prediction = best_model.predict(X_validation)
 
-    precision_value = precision_score(y_val_prediction, y_validation,average='weighted', zero_division=0)
+    precision_value = precision_score(y_val_prediction, y_validation, average='weighted', zero_division=0)
     recall_value = recall_score(y_val_prediction, y_validation, average='weighted', zero_division=0)
     f1_value = f1_score(y_val_prediction, y_validation, average='weighted')
     accuracy_score = best_model.score(X_validation, y_validation)
@@ -125,4 +125,3 @@ def evaluate_different_models():
 
 if __name__ == "__main__":
     evaluate_different_models()
-

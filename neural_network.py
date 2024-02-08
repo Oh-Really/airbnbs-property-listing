@@ -28,18 +28,16 @@ class AirbnbNightlyPriceImageDataset(Dataset):
         return (features, label)
 
     def __len__(self):
-        return len(self.data)    
-
+        return len(self.data)
+    
 dataset = AirbnbNightlyPriceImageDataset()
 
 
-train_set, test_set = random_split(dataset, [round(len(dataset)*0.894), round(len(dataset)*0.106)])
-train_set, validation_set = random_split(train_set, [round(len(train_set)*0.8), round(len(train_set)*0.2)])
-
-train_loader = DataLoader(train_set, batch_size=10, shuffle=True)
-test_loader = DataLoader(test_set, batch_size=2)
-validation_loader = DataLoader(validation_set, batch_size=2)
-#data_loader_list = (train_loader, validation_loader, test_loader)
+train_set, test_set = random_split(dataset, [round(len(dataset)*0.894), round(len(dataset)*0.106)], torch.Generator().manual_seed(42))
+train_set, validation_set = random_split(train_set, [round(len(train_set)*0.8), round(len(train_set)*0.2)], torch.Generator().manual_seed(42))
+train_loader = DataLoader(train_set, batch_size=30, shuffle=True)
+test_loader = DataLoader(test_set, batch_size=10)
+validation_loader = DataLoader(validation_set, batch_size=10)
 
 
 def get_nn_config(config_file):
@@ -48,9 +46,6 @@ def get_nn_config(config_file):
         config = yaml.safe_load(file)
     return config
 
-# example = next(iter(train_loader))
-# features, labels = example
-# features = features.to(torch.float32)
 
 class LinearRegression(torch.nn.Module):
     def __init__(self, nn_config):
@@ -61,11 +56,12 @@ class LinearRegression(torch.nn.Module):
         self.layer = torch.nn.Sequential(
             torch.nn.Linear(10,hidden_layers[0]),
             torch.nn.ReLU(),
+            torch.nn.Dropout(0.2),
             torch.nn.Linear(hidden_layers[0],hidden_layers[1]),
             torch.nn.ReLU(),
+            torch.nn.Dropout(0.1),
             torch.nn.Linear(hidden_layers[1],1)
         )
-        # drop out
         # batch norm
 
     def forward(self, features):
@@ -94,15 +90,13 @@ def train_loop(model, train_loader, config=None,  epochs=10):
     start = time()
     optimiser_method = eval(config['optimiser'])
     optimiser = optimiser_method(model.parameters(), lr = config['learning_rate'])
-    #  optimiser = torch.optim.Adam(model.parameters(), lr=0.001)
 
     writer = SummaryWriter()
     batch_idx = 0
-
-    
-    train_loss_avg = {} # lists of average losses over all epochs
+    train_loss_avg = {}
     train_r2_avg = {}
-    inference_time_avg = []
+    inference_time_avg = []    
+
     for epoch in range(epochs):        
         model.train()
         train_loss_sum = []
@@ -117,32 +111,27 @@ def train_loop(model, train_loader, config=None,  epochs=10):
             end_prediction_time = time() - start_prediction_time
             end_prediction_time = end_prediction_time/len(labels)  # Average time taken for one prediction per batch
             inference_time += end_prediction_time 
+
             loss = F.mse_loss(prediction, labels)
             loss.backward()
             train_loss_sum.append(loss.item())
             r2_value = r2_score(prediction, labels)
             train_r2_sum.append(r2_value)
-            # if batch_idx == 0:
-            #     print(loss)
-            #     print(f'printing item: {loss.item()}')
-            #     break
-            # print(loss.item())
-            # optimisation step
+
             optimiser.step()
             optimiser.zero_grad()
             writer.add_scalar('training_loss', loss.item(), batch_idx)
             #print(f"batch number is {batch_idx}, loss is {loss.item()}")
             batch_idx += 1
 
-        
-        train_loss_avg[epoch] = train_loss_sum[-1]  # Add the last loss value of each epoch to the dict
-        train_r2_avg[epoch] = train_r2_sum[-1]      # Add the last r2 value of each epoch to the dict
-        inference_time_avg.append(inference_time)   # Add the sum of the average of all precition times for one epoch
-
+        # After all batches, sum the loss and R2, and divide by length of the loader to get average over the whole loader
+        train_loss_avg[epoch] = sum(train_loss_sum)/len(train_loader)
+        train_r2_avg[epoch] = sum(train_r2_sum)/len(train_loader)
+        inference_time_avg.append(inference_time)
 
     training_duration = np.round((time() - start), 2) # time in s
-    train_metrics = {'RMSE': list(train_loss_avg.values())[-1], "R2" : list(train_r2_avg.values())[-1].item(), "train inference time": inference_time_avg[-1]}
-        
+    # Take last epoch run as values for train set
+    train_metrics = {'RMSE': list(train_loss_avg.values())[-1], "R2" : list(train_r2_avg.values())[-1].item(), "train inference time": inference_time_avg[-1]}        
 
     return model, training_duration, train_metrics
 
@@ -183,7 +172,7 @@ def eval_model(model, data_loader_list, train_metrics, training_duration):
             r2_list = []   
             inference_times = []           
             model.eval()
-            batch_idx = 0 # for debugging
+            #batch_idx = 0 # for debugging
             with torch.no_grad():
                 for batch in loader:
                     features, labels = batch
@@ -210,14 +199,16 @@ def eval_model(model, data_loader_list, train_metrics, training_duration):
             
             # Extract loss and r2 score for the validation loader
             if i == 0:
-                val_loss = loss_list[-1]
-                val_r2 = r2_list[-1]
+                val_loss = sum(loss_list)/len(loader)
+                # print(val_loss)
+                # print(f'Older loss was: ', {loss_list[-1]})
+                val_r2 = sum(r2_list)/len(loader)
                 val_inference_time = sum(inference_times)/len(loader)
                 metrics['validation_set'] = {'RMSE': val_loss, "R2": val_r2.item(), "validation inference time": val_inference_time}
                 i+=1
             else:
-                test_loss = loss_list[-1]
-                test_r2 = r2_list[-1]
+                test_loss = sum(loss_list)/len(loader)
+                test_r2 = sum(r2_list)/len(loader)
                 test_inference_time = sum(inference_times)/len(loader)
                 metrics['test_set'] = {'RMSE': test_loss, "R2": test_r2.item(), "test inference time": test_inference_time}        
 
@@ -302,3 +293,4 @@ if __name__ == "__main__":
     # model = LinearRegression(config)
     # model, training_duration, train_metrics = train_loop(model, train_loader, config)
     # save_model(model, config, train_metrics, training_duration)
+# %%

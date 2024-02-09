@@ -5,6 +5,7 @@ from typing import Any
 from torch.utils.data import Dataset, DataLoader, random_split
 from torcheval.metrics.functional import r2_score
 from torch.utils.tensorboard import SummaryWriter
+from sklearn.model_selection import train_test_split
 from pathlib import Path
 import random
 import numpy as np
@@ -24,7 +25,7 @@ class AirbnbNightlyPriceImageDataset(Dataset):
     def __getitem__(self, index):
         example = self.data.iloc[index]
         features = torch.tensor(example.iloc[[7, 8, 9, 11, 12, 13, 14, 15, 16, 19]])
-        label = torch.tensor(example['Price_Night'])
+        label = torch.tensor(example['Price_Night'])/10
         return (features, label)
 
     def __len__(self):
@@ -32,13 +33,17 @@ class AirbnbNightlyPriceImageDataset(Dataset):
     
 dataset = AirbnbNightlyPriceImageDataset()
 
-
 train_set, test_set = random_split(dataset, [round(len(dataset)*0.894), round(len(dataset)*0.106)], torch.Generator().manual_seed(42))
 train_set, validation_set = random_split(train_set, [round(len(train_set)*0.8), round(len(train_set)*0.2)], torch.Generator().manual_seed(42))
-train_loader = DataLoader(train_set, batch_size=30, shuffle=True)
-test_loader = DataLoader(test_set, batch_size=10)
-validation_loader = DataLoader(validation_set, batch_size=10)
+# tts_train_set, tts_test_set = train_test_split(dataset, test_size=0.3, stratify=dataset.data["ppn_cat"], random_state=20)
+# tts_train_set, tts_validation_set = train_test_split(train_set, test_size=0.5, random_state=20)
 
+train_loader = DataLoader(train_set, batch_size=40, shuffle=True)
+test_loader = DataLoader(test_set, batch_size=16)
+validation_loader = DataLoader(validation_set, batch_size=16)
+
+# example = next(iter(train_loader))
+# features, labels = example
 
 def get_nn_config(config_file):
     '''Return config file as Dict.'''
@@ -70,7 +75,7 @@ class LinearRegression(torch.nn.Module):
 
 
 
-def train_loop(model, train_loader, config=None,  epochs=10):
+def train_loop(model, train_loader, config=None,  epochs=50):
     '''
     Function to train and obtain training metrics for a given model.
 
@@ -172,7 +177,6 @@ def eval_model(model, data_loader_list, train_metrics, training_duration):
             r2_list = []   
             inference_times = []           
             model.eval()
-            #batch_idx = 0 # for debugging
             with torch.no_grad():
                 for batch in loader:
                     features, labels = batch
@@ -185,16 +189,6 @@ def eval_model(model, data_loader_list, train_metrics, training_duration):
                     loss = F.mse_loss(prediction, labels)
                     loss_list.append(loss.item())
                     r2_list.append(r2_score(prediction, labels))
-                    # try:
-                    #     r2_list.append(r2_score(prediction, labels))
-                    # except:
-                    #     print(f"i = {i}")
-                    #     print(batch_idx)
-                    #     print(features.shape)
-                    #     print(labels.shape)
-                    #     print(features)
-                    #     print(labels)
-                    # batch_idx += 1
                     #writer.add_scalar('validation_loss', loss.item(), batch_idx)
             
             # Extract loss and r2 score for the validation loader
@@ -257,15 +251,16 @@ def save_model(model, config, metrics):
 
 def generate_nn_configs():
     config_list = []
-    for lr in [0.1, 0.001, 0.001]:
-        for i in range(6):
-            layer1 = random.randint(10, 15)
-            layer2 = random.randint(2, 5)
-            config = {}
-            config['optimiser'] = 'torch.optim.Adam'
-            config['learning_rate'] = lr
-            config['hidden_layer_width'] = [layer1, layer2]
-            config_list.append(config)
+    for optimiser in ['torch.optim.Adam', 'torch.optim.SGD', 'torch.optim.Adagrad']:
+        for lr in [0.1, 0.01, 0.001]:
+            for i in range(6):
+                layer1 = random.randint(10, 15)
+                layer2 = random.randint(2, 5)
+                config = {}
+                config['optimiser'] = optimiser
+                config['learning_rate'] = lr
+                config['hidden_layer_width'] = [layer1, layer2]
+                config_list.append(config)
     
     return config_list
 

@@ -87,18 +87,21 @@ Accuracy measures the number of correct predictions as a percentage of total pre
 
 #### Precision
 The precision score is the accuracy of positive predictions, or in other words the ratio of true positives (correct classifications for a given class) over the total number of entries predicted for that class (so true positives added to false positivies - incorrect classifications for a given class)
+
 $$
 precision = \frac{TP}{TP + FP}
 $$
 
 #### Recall
 Recall is the ratio of true positive instances over the sum of all instances of that class. This gives a percentage of coming across a correct/true prediction.
+
 $$
 recall = \frac{TP}{TP + FN}
 $$
 
 #### F1 score
 A convenient way to combine both precision and recall is the F1 score. It is the harmonic mean (meaning giving more weight to low values) of precision and recall, meaning a high F1 score is only ahcieved in the case of high recall and precision.
+
 $$
 F_{1} = 2 x \frac{precision x recall}{precision + recall} = \frac{TP}{TP + \frac{FN + FP}{2}}
 $$

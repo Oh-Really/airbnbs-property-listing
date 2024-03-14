@@ -70,3 +70,14 @@ The next step is to then turn our attention to evaluating the model when using d
 We try to find the "best" model, which as stated above is going off our RMSE metric. To find the best performing model, we find the model with the lowest RMSE score for the testing set, as this is the ultimate test; does the model we have trained generalise well to unseen data. A low score of the loss on training set but a high score on the test/validation set is indicative of overfitting. All of the code for the regression part of this project can be found in the modelling.py file.
 
 ## Classification
+In this section we move onto classifiaction, where we try to predict the Category of a given house based of the other features. Here, Category takes on a set of discrete values, hence the need to use a classification algorithm.
+
+### Logistic model
+$$
+p(x) = \frac{1}{1+e^{-(xb)}},
+$$
+
+The logistic function outputs a probability that a certain observation belongs to a given class. The nature of the above equation is a sigmoid function, which forces values to within the range [0, 1]. In our case, we are trying to classify more than just a binary output and so we need to use multinomial logistic regression.
+
+### Metrics
+

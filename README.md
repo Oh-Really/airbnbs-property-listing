@@ -103,10 +103,20 @@ $$
 A convenient way to combine both precision and recall is the F1 score. It is the harmonic mean (meaning giving more weight to low values) of precision and recall, meaning a high F1 score is only ahcieved in the case of high recall and precision.
 
 $$
-F_{1} = 2 x \frac{precision x recall}{precision + recall} = \frac{TP}{TP + \frac{FN + FP}{2}}
+F_{1} = 2 \times \frac{precision x recall}{precision + recall} = \frac{TP}{TP + \frac{FN + FP}{2}}
 $$
 
 #### Confusion matrix
-Confusion matrices give a way of checking the predictions made against the true class. Every row in a confusion matrix represents a class (category in our case) while each column represents a predicted class.
+Confusion matrices give a way of checking the predictions made against the true class. Every row in a confusion matrix represents a class (category in our case) while each column represents a predicted class. Here is the confusion matrix from our best model classifier
+
+![](images/confusion_matrix.png)
+
+With an ideal classifier (i.e. one that is 100% accurate) you would only have numbers in the leading diagonals and 0's everywhere else. As we can see from this image, for a given class there are a lot of predictions of other clases, only semeingly does the category 'Amazing Pools' seem to have any degree of high correct classification rate.
+
+
+### Results
+From running the different classification models (we iterated over a decision tree classifier, gradient boosting classifier, logisitc regression, and random forest regressor), the best scroing model was a logistic model which had a precison score of 0.516, a recall score of 0.435 and an F1 score of 0.464, and an accuracy of 0.435. This tells us that this model correctly predicts the categopry of a listing only 43.5% of the time. This is just over twice as good as randomly selecting from any of the categories (5 categories give a 20% chance of a correct prediction when randomly predicting a category). All of this tells us that from the data we have trained on, there is a correlation between numeric features and predicting the category, however this correlation is fairly weak and does not translate well into predicting new examples.
+
+## Neural Network
 
 

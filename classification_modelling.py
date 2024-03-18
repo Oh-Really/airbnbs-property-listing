@@ -14,7 +14,7 @@ features, labels = load_airbnb(airbnb_df, "Category")
 
 X_train, X_validation, X_test, y_train, y_validation, y_test = get_training_validation_data(features, labels)
 
-# %%
+
 def my_Log_Regression():
     ''' Implementation of a Logistic model'''
     clf_model = LogisticRegression(max_iter = 100000)

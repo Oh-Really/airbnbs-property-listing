@@ -9,7 +9,7 @@ import numpy as np
 
 print(sys.path)
 
-def load_data(filename : str, index_col=False) -> pd.DataFrame:
+def load_data(filename: str, index_col=False) -> pd.DataFrame:
     root_dir = os.getcwd()
     csv_path = Path(root_dir, 'airbnb-property-listings', 'tabular_data', filename)
     if csv_path.is_file():
@@ -69,11 +69,14 @@ def load_airbnb(df, label : str) -> tuple[pd.DataFrame, pd.Series]:
         features = df.select_dtypes(include=[np.number])
         labels = df.pop(label)
         return features, labels
+    elif label == 'Category':
+        features = df.select_dtypes(include=[np.number])
+        labels = df.pop(label)
+        return features, labels
     else:
         features = df.select_dtypes(include=[np.number])
         labels = df[label]
         return features, labels
-
 
 
 if __name__ == "__main__":

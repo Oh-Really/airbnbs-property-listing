@@ -92,7 +92,7 @@ def evaluate_different_models():
     logistic_regression_hyperparameters = {
         'multi_class' : ['ovr', 'multinomial'],
         'penalty': ['l2', 'none'],
-        'max_iter' : [100, 1000, 1000]
+        'max_iter' : [1000, 10000, 10000]
     }
     decisiontree_hyperparameters = {
         "criterion": ['gini', 'entropy', 'log_loss'],

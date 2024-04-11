@@ -35,8 +35,7 @@ dataset = AirbnbNightlyPriceImageDataset()
 
 train_set, test_set = random_split(dataset, [round(len(dataset)*0.894), round(len(dataset)*0.106)], torch.Generator().manual_seed(42))
 train_set, validation_set = random_split(train_set, [round(len(train_set)*0.8), round(len(train_set)*0.2)], torch.Generator().manual_seed(42))
-# tts_train_set, tts_test_set = train_test_split(dataset, test_size=0.3, stratify=dataset.data["ppn_cat"], random_state=20)
-# tts_train_set, tts_validation_set = train_test_split(train_set, test_size=0.5, random_state=20)
+
 
 train_loader = DataLoader(train_set, batch_size=40, shuffle=True)
 test_loader = DataLoader(test_set, batch_size=16)
@@ -60,14 +59,15 @@ class LinearRegression(torch.nn.Module):
 
         self.layer = torch.nn.Sequential(
             torch.nn.Linear(10,hidden_layers[0]),
+            torch.nn.BatchNorm1d(hidden_layers[0]),
             torch.nn.ReLU(),
             torch.nn.Dropout(0.2),
             torch.nn.Linear(hidden_layers[0],hidden_layers[1]),
+            torch.nn.BatchNorm1d(hidden_layers[1]),
             torch.nn.ReLU(),
             torch.nn.Dropout(0.1),
             torch.nn.Linear(hidden_layers[1],1)
         )
-        # batch norm
 
     def forward(self, features):
         '''Performs forward pass on data. Executed when model is called.'''
@@ -100,7 +100,7 @@ def train_loop(model, train_loader, config=None,  epochs=50):
     batch_idx = 0
     train_loss_avg = {}
     train_r2_avg = {}
-    inference_time_avg = []    
+    inference_time_avg = []
 
     for epoch in range(epochs):        
         model.train()
@@ -142,10 +142,7 @@ def train_loop(model, train_loader, config=None,  epochs=50):
 
     
 def generate_time_folders():
-    '''
-    Function to create folders with folder name of current time.
-
-    '''
+    ''' Function to create folders with folder name of current time.  '''
     year, month, day = datetime.today().year, datetime.today().month, datetime.today().day
     hour, minute, second = strftime('%H'), strftime('%M'), strftime('%S')
     if len(str(day)) == 1:
@@ -172,10 +169,12 @@ def eval_model(model, data_loader_list, train_metrics, training_duration):
         
         metrics = {}
         i = 0
+        writer = SummaryWriter()
         for loader in data_loader_list:
+            batch_idx = 0
             loss_list = []
-            r2_list = []   
-            inference_times = []           
+            r2_list = []
+            inference_times = [] 
             model.eval()
             with torch.no_grad():
                 for batch in loader:
@@ -189,13 +188,11 @@ def eval_model(model, data_loader_list, train_metrics, training_duration):
                     loss = F.mse_loss(prediction, labels)
                     loss_list.append(loss.item())
                     r2_list.append(r2_score(prediction, labels))
-                    #writer.add_scalar('validation_loss', loss.item(), batch_idx)
+                    writer.add_scalar('validation_loss', loss.item(), batch_idx)
             
             # Extract loss and r2 score for the validation loader
             if i == 0:
                 val_loss = sum(loss_list)/len(loader)
-                # print(val_loss)
-                # print(f'Older loss was: ', {loss_list[-1]})
                 val_r2 = sum(r2_list)/len(loader)
                 val_inference_time = sum(inference_times)/len(loader)
                 metrics['validation_set'] = {'RMSE': val_loss, "R2": val_r2.item(), "validation inference time": val_inference_time}
@@ -237,10 +234,6 @@ def save_model(model, config, metrics):
         hyperparams = json.dumps(config)
         with open("hyperparameters.json", 'w+') as hyperparam_file:
             hyperparam_file.write(hyperparams)
-        ## Get metrics, then dump into file called metrics.json
-        ## metrics = eval_model(model, [validation_loader, test_loader])
-        ## metrics['training_set'] = train_metrics
-        ## metrics['training_duration'] = training_duration
         metrics = json.dumps(metrics)
         with open("metrics.json", 'w+') as metrics_file:
             metrics_file.write(metrics)

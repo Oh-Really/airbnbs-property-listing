@@ -5,4 +5,4 @@ models/
 __init__.py
 runs/
 nn_config.yaml
-images/
+neural_network.ipynb

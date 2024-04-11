@@ -74,7 +74,7 @@ In this section we move onto classifiaction, where we try to predict the Categor
 
 ### Logistic model
 $$
-p(x) = \frac{1}{1+e^{-(xb)}},
+p(x) = \frac{1}{1+e^{-(xb)}}
 $$
 
 The logistic function outputs a probability that a certain observation belongs to a given class. The nature of the above equation is a sigmoid function, which forces values to within the range [0, 1]. In our case, we are trying to classify more than just a binary output and so we need to use multinomial logistic regression.
@@ -103,7 +103,7 @@ $$
 A convenient way to combine both precision and recall is the F1 score. It is the harmonic mean (meaning giving more weight to low values) of precision and recall, meaning a high F1 score is only ahcieved in the case of high recall and precision.
 
 $$
-F_{1} = 2 \times \frac{precision x recall}{precision + recall} = \frac{TP}{TP + \frac{FN + FP}{2}}
+F_{1} = 2 \times \frac{precision * recall}{precision + recall} = \frac{TP}{TP + \frac{FN + FP}{2}}
 $$
 
 #### Confusion matrix
@@ -118,5 +118,19 @@ With an ideal classifier (i.e. one that is 100% accurate) you would only have nu
 From running the different classification models (we iterated over a decision tree classifier, gradient boosting classifier, logisitc regression, and random forest regressor), the best scroing model was a logistic model which had a precison score of 0.516, a recall score of 0.435 and an F1 score of 0.464, and an accuracy of 0.435. This tells us that this model correctly predicts the categopry of a listing only 43.5% of the time. This is just over twice as good as randomly selecting from any of the categories (5 categories give a 20% chance of a correct prediction when randomly predicting a category). All of this tells us that from the data we have trained on, there is a correlation between numeric features and predicting the category, however this correlation is fairly weak and does not translate well into predicting new examples.
 
 ## Neural Network
+A Neural Network consists of one or more inputs which form the input layer, one or more hidden layers within the network, and then a final output layer. How many layers one uses is specific to the problem and something one needs to figure out; simply increasing the layers of a neural network does not gurantee a better performance of the model. Within each layer are nodes (or neurons) which can either be on or off (such on/off neurons are known as perceptrons). These neurons take inputs $x_{1}, x_{2}, \dots, x_{n}$ and each input has a weight associated with it's importance to the output, $w_{1}, w_{2}, \dots, w_{n}$. For a simple neuron, the output of 0 or 1 is determined by whether the weighted sum $\sum_j=w_{j}x_{j}$ is less than or greater than some threshold value. The output of this neuron is then fed as an input to a neuron in the next layer within the neural network, and so on until you reach the output of the neural network.
 
+We then turned our attention to predicting the price via the use of a Neural Network. The first step here required us to create a custom Dataset class, one that returns the relevant columns of our dataframe. We then bacthed these examples up into what's known as loaders, namely a train, test, and validation loader.
+
+
+Our Neural Network consists of linear models, where the outputs are then passed to an activation function. An activation function is needed since without one a neural network is esntially just a linear regression model. The sum of the weights and biases are then passed to the activation function which then yields an output. In our model we used the ReLU activation function.
+
+We first experimented with the learning rate of our model and the width of our hidden layers, which we found to be 0.1 and 11-5 respectively. We also then tuned the model to use different optimisers with varying learning rates and hidden layer widths and trained each permutation of these models to get the best model (measured by lowest RMSE). The results of the best model for the training, validation and test sets are below:
+
+|Metric|Training set          |Validation set |Test set|
+|------|----------------------|---------|--------------|
+|$RMSE$|$108.594$|$126.235$|$107.619$|
+|$R^2$ |$0.106$|$0.185$|$0.299$|
+
+What do these results tell us? Across all data sets, the RMSE is over the hundred mark. Considering that most properties in this dataset have an average house price of 154.172, we can't really draw conclusions on the house price from the data we have since the error is almost as large as the values themselves! The low $R^2$ values also indicate little correlation between our features and our target variable. In short, despite the parameter tuning that resulted in better refined models, the underlying data doesn't seem to present any strong correlation between the numeric features and the price per night of a property.
 
